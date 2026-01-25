@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import Select from "react-select";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://ficha-tecnica-api.onrender.com";
 
@@ -29,7 +30,7 @@ const mf = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }
 export default function App() {
   const [recipes, setRecipes] = useState<RecipeOption[]>([]);
   const [selectedKey, setSelectedKey] = useState<string>("");
-  const [volume, setVolume] = useState<string>("440");
+  const [volume, setVolume] = useState<string>("1000");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CalcResponse | null>(null);
   const [error, setError] = useState<string>("");
@@ -97,18 +98,24 @@ export default function App() {
       <section className="controls">
         <div className="field">
           <label>Receita</label>
-          <select value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)}>
-            {recipes.map((r) => (
-              <option key={r.key} value={r.key}>
-                {r.label}
-              </option>
-            ))}
-          </select>
+
+          <Select
+            classNamePrefix="rs"
+            placeholder="Digite para buscar…"
+            isClearable={false}
+            options={recipes.map(r => ({ value: r.key, label: r.label }))}
+            value={
+              selectedKey
+                ? { value: selectedKey, label: recipes.find(r => r.key === selectedKey)?.label ?? selectedKey }
+                : null
+            }
+            onChange={(opt) => setSelectedKey(opt?.value ?? "")}
+          />
         </div>
 
         <div className="field">
-          <label>Volume final desejado</label>
-          <input value={volume} onChange={(e) => setVolume(e.target.value)} placeholder="Ex.: 440" />
+          <label>Volume final desejado (em gr ou ml)</label>
+          <input value={volume} onChange={(e) => setVolume(e.target.value)} placeholder="Ex.: 1000" inputMode="decimal" />
           <small>Vazio = 1x (sem multiplicador)</small>
         </div>
       </section>

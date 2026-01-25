@@ -106,3 +106,14 @@ th, td {
   .cards { grid-template-columns: 1fr; }
 }
 
+/* react-select */
+.rs__control {
+  border-radius: 12px !important;
+  border: 1px solid #d1d5db !important;
+  min-height: 44px !important;
+}
+.rs__value-container { padding: 2px 10px !important; }
+.rs__input-container { margin: 0 !important; padding: 0 !important; }
+.rs__menu { border-radius: 12px !important; overflow: hidden; }
+.rs__option { padding: 10px 12px !important; }
+.rs__single-value { color: #111827 !important; }
