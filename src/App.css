@@ -117,3 +117,24 @@ th, td {
 .rs__menu { border-radius: 12px !important; overflow: hidden; }
 .rs__option { padding: 10px 12px !important; }
 .rs__single-value { color: #111827 !important; }
+
+.prepWrap, .validWrap { margin-top: 16px; }
+.prepWrap h2, .validWrap h2 { margin: 0 0 10px; font-size: 16px; }
+
+.prepList {
+  margin: 0;
+  padding-left: 18px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px 14px 12px 32px;
+}
+
+.prepList li { margin: 6px 0; line-height: 1.4; }
+
+.validBox {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px 14px;
+}

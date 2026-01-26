@@ -22,10 +22,58 @@ type CalcResponse = {
     custoReceita: number | null;
     custoPorPorcao: number | null;
   }>;
+  modoPreparo: string;
+  validade: string;
 };
 
 const nf = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 });
 const mf = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+function norm(s: string) {
+  return (s ?? "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+// aceita aspas "..." e aspas “...”
+const QUOTED_RE = /["“]([^"”]+)["”]/g;
+
+function formatModoPreparo(
+  texto: string,
+  ingredients: Array<{ nome: string; quantEntrada: number | null; unidade: string }>
+) {
+  const map = new Map<string, { quantEntrada: number | null; unidade: string; nome: string }>();
+
+  for (const it of ingredients) {
+    map.set(norm(it.nome), { quantEntrada: it.quantEntrada, unidade: it.unidade, nome: it.nome });
+  }
+
+  // 1) substitui trechos entre aspas
+  const replaced = (texto ?? "").replace(QUOTED_RE, (_m, ingRaw: string) => {
+    const key = norm(ingRaw);
+    const found = map.get(key);
+
+    // Se não achou no mapa: remove aspas e mantém o texto como está
+    if (!found) return ingRaw;
+
+    const q = found.quantEntrada;
+    const u = (found.unidade || "").trim();
+
+    // Se não tiver número, só remove aspas e exibe nome
+    if (q == null) return found.nome;
+
+    return `de ${nf.format(q)}${u ? ` ${u}` : ""} ${found.nome}`;
+  });
+
+  // 2) quebra em passos por "."
+  return replaced
+    .split(".")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export default function App() {
   const [recipes, setRecipes] = useState<RecipeOption[]>([]);
@@ -186,6 +234,29 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+          </section>
+          <section className="prepWrap">
+            <h2>Modo de preparo</h2>
+            {data.modoPreparo ? (
+              <ol className="prepList">
+                {formatModoPreparo(
+                  data.modoPreparo,
+                  data.ingredients.map((i) => ({
+                    nome: i.nome,
+                    quantEntrada: i.quantEntrada,
+                    unidade: i.unidade,
+                  }))
+                ).map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ol>
+            ) : (
+              <div className="muted">Sem modo de preparo cadastrado.</div>
+            )}
+          </section>
+          <section className="validWrap">
+            <h2>Validade</h2>
+            <div className="validBox">{data.validade || "Sem validade cadastrada."}</div>
           </section>
         </>
       )}
