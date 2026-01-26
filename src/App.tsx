@@ -195,7 +195,7 @@ export default function App() {
     <div className="page">
       <header className="header">
         <h1>Ficha Técnica</h1>
-        <p>Selecione uma receita e defina o volume ou a quantidade de receitas a ser produzido.</p>
+        <p>Selecione uma receita e defina o volume ou a quantidade de receitas que serão produzidas.</p>
       </header>
 
       <section className="controls">
