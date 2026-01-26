@@ -227,7 +227,6 @@ export default function App() {
             placeholder="Ex.: 1000"
             inputMode="decimal"
           />
-          <small>Vazio = 1x (sem multiplicador)</small>
         </div>
 
         <div className="field">
@@ -238,10 +237,6 @@ export default function App() {
             placeholder="Ex.: 1,5"
             inputMode="decimal"
           />
-          <small>
-            Se preencher, o volume vira “volume base × quant.”. Se alterar o volume, recalcula a
-            quant.
-          </small>
         </div>
       </section>
 
