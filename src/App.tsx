@@ -255,10 +255,19 @@ export default function App() {
               <div className="k">Receita</div>
               <div className="v">{selectedLabel}</div>
             </div>
+
             <div className="card">
               <div className="k">Volume base</div>
               <div className="v">{nf.format(data.volumeBase)}</div>
             </div>
+
+            <div className="card">
+              <div className="k">Volume a ser produzido</div>
+              <div className="v">
+                {volume ? nf.format(parseUserNumberPtBr(volume) ?? 0) : nf.format(data.volumeBase)}
+              </div>
+            </div>
+
             <div className="card">
               <div className="k">Custo total por volume</div>
               <div className="v">{mf.format(data.custoTotalPorVolume)}</div>
