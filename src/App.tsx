@@ -68,11 +68,16 @@ function formatModoPreparo(
     return `de ${nf.format(q)}${u ? ` ${u}` : ""} ${found.nome}`;
   });
 
-  // 2) quebra em passos por "."
-  return replaced
+  // protege pontos que fazem parte de números (ex.: 2.666,667)
+  const protectedText = replaced.replace(/(\d)\.(\d)/g, "$1<dot>$2");
+
+  // quebra frases por "." somente como pontuação (não vai cortar número)
+  const lines = protectedText
     .split(".")
-    .map((s) => s.trim())
+    .map((s) => s.replaceAll("<dot>", ".").trim())
     .filter(Boolean);
+
+  return lines;
 }
 
 export default function App() {
