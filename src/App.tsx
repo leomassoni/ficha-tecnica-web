@@ -41,6 +41,29 @@ function norm(s: string) {
 // aceita aspas "..." e aspas “...”
 const QUOTED_RE = /["“]([^"”]+)["”]/g;
 
+function parseUserNumberPtBr(s: string): number | null {
+  const t = (s ?? "").trim();
+  if (!t) return null;
+
+  // remove milhares e troca vírgula por ponto
+  const normalized = t.replace(/\./g, "").replace(",", ".");
+  const n = Number(normalized);
+
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatPtBr(n: number, decimals = 2) {
+  return n.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function roundTo(n: number, decimals = 2) {
+  const p = 10 ** decimals;
+  return Math.round(n * p) / p;
+}
+
 function formatModoPreparo(
   texto: string,
   ingredients: Array<{ nome: string; quantEntrada: number | null; unidade: string }>
@@ -65,25 +88,25 @@ function formatModoPreparo(
     // Se não tiver número, só remove aspas e exibe nome
     if (q == null) return found.nome;
 
-    return `de ${nf.format(q)}${u ? ` ${u}` : ""} ${found.nome}`;
+    // ✅ "quant unidade de ingrediente"
+    return `${nf.format(q)}${u ? ` ${u}` : ""} de ${found.nome}`;
   });
 
   // protege pontos que fazem parte de números (ex.: 2.666,667)
   const protectedText = replaced.replace(/(\d)\.(\d)/g, "$1<dot>$2");
 
-  // quebra frases por "." somente como pontuação (não vai cortar número)
-  const lines = protectedText
+  // 2) quebra em passos por "." (sem cortar números)
+  return protectedText
     .split(".")
     .map((s) => s.replaceAll("<dot>", ".").trim())
     .filter(Boolean);
-
-  return lines;
 }
 
 export default function App() {
   const [recipes, setRecipes] = useState<RecipeOption[]>([]);
   const [selectedKey, setSelectedKey] = useState<string>("");
   const [volume, setVolume] = useState<string>("1000");
+  const [qtdReceitas, setQtdReceitas] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CalcResponse | null>(null);
   const [error, setError] = useState<string>("");
@@ -106,6 +129,31 @@ export default function App() {
     })();
   }, []);
 
+  const volumeBase = data?.volumeBase ?? null;
+
+  function handleVolumeChange(v: string) {
+    setVolume(v);
+
+    const vol = parseUserNumberPtBr(v);
+    if (!volumeBase || volumeBase <= 0 || vol == null) {
+      setQtdReceitas("");
+      return;
+    }
+
+    const q = roundTo(vol / volumeBase, 2);
+    setQtdReceitas(formatPtBr(q, 2));
+  }
+
+  function handleQtdReceitasChange(v: string) {
+    setQtdReceitas(v);
+
+    const q = parseUserNumberPtBr(v);
+    if (!volumeBase || volumeBase <= 0 || q == null) return;
+
+    const vol = roundTo(volumeBase * q, 2);
+    setVolume(formatPtBr(vol, 2));
+  }
+
   // recalcula quando muda receita ou volume
   useEffect(() => {
     if (!selectedKey) return;
@@ -118,7 +166,9 @@ export default function App() {
         setError("");
 
         const q = volume.trim() ? `?volume=${encodeURIComponent(volume.trim())}` : "";
-        const res = await fetch(`${API_URL}/api/recipes/${encodeURIComponent(selectedKey)}/calc${q}`);
+        const res = await fetch(
+          `${API_URL}/api/recipes/${encodeURIComponent(selectedKey)}/calc${q}`
+        );
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error ?? "Erro ao calcular");
 
@@ -156,10 +206,13 @@ export default function App() {
             classNamePrefix="rs"
             placeholder="Digite para buscar…"
             isClearable={false}
-            options={recipes.map(r => ({ value: r.key, label: r.label }))}
+            options={recipes.map((r) => ({ value: r.key, label: r.label }))}
             value={
               selectedKey
-                ? { value: selectedKey, label: recipes.find(r => r.key === selectedKey)?.label ?? selectedKey }
+                ? {
+                    value: selectedKey,
+                    label: recipes.find((r) => r.key === selectedKey)?.label ?? selectedKey,
+                  }
                 : null
             }
             onChange={(opt) => setSelectedKey(opt?.value ?? "")}
@@ -168,8 +221,27 @@ export default function App() {
 
         <div className="field">
           <label>Volume final desejado (em gr ou ml)</label>
-          <input value={volume} onChange={(e) => setVolume(e.target.value)} placeholder="Ex.: 1000" inputMode="decimal" />
+          <input
+            value={volume}
+            onChange={(e) => handleVolumeChange(e.target.value)}
+            placeholder="Ex.: 1000"
+            inputMode="decimal"
+          />
           <small>Vazio = 1x (sem multiplicador)</small>
+        </div>
+
+        <div className="field">
+          <label>Quant. receitas desejado</label>
+          <input
+            value={qtdReceitas}
+            onChange={(e) => handleQtdReceitasChange(e.target.value)}
+            placeholder="Ex.: 1,5"
+            inputMode="decimal"
+          />
+          <small>
+            Se preencher, o volume vira “volume base × quant.”. Se alterar o volume, recalcula a
+            quant.
+          </small>
         </div>
       </section>
 
@@ -190,10 +262,6 @@ export default function App() {
             <div className="card">
               <div className="k">Custo total por volume</div>
               <div className="v">{mf.format(data.custoTotalPorVolume)}</div>
-            </div>
-            <div className="card">
-              <div className="k">Multiplicador</div>
-              <div className="v">{data.multiplier.toFixed(6)}</div>
             </div>
           </section>
 
@@ -240,6 +308,7 @@ export default function App() {
               </table>
             </div>
           </section>
+
           <section className="prepWrap">
             <h2>Modo de preparo</h2>
             {data.modoPreparo ? (
@@ -259,6 +328,7 @@ export default function App() {
               <div className="muted">Sem modo de preparo cadastrado.</div>
             )}
           </section>
+
           <section className="validWrap">
             <h2>Validade</h2>
             <div className="validBox">{data.validade || "Sem validade cadastrada."}</div>
