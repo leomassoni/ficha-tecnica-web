@@ -225,6 +225,102 @@ function downloadWorkbook(workbook: import("xlsx").WorkBook, filename: string, X
   XLSX.writeFile(workbook, filename);
 }
 
+function buildSheetName(label: string, usedNames: Set<string>) {
+  const base = label.replace(/[\\/?*[\]:]/g, "").trim().slice(0, 31) || "Ficha";
+  let candidate = base;
+  let counter = 2;
+
+  while (usedNames.has(candidate)) {
+    const suffix = ` ${counter}`;
+    candidate = `${base.slice(0, Math.max(0, 31 - suffix.length))}${suffix}`;
+    counter += 1;
+  }
+
+  usedNames.add(candidate);
+  return candidate;
+}
+
+function buildRecipeSheet(
+  XLSX: typeof import("xlsx"),
+  recipe: ExportRecipeData
+) {
+  const rows: Array<Array<string | number>> = [];
+  const merges: NonNullable<import("xlsx").WorkSheet["!merges"]> = [];
+
+  rows.push([recipe.recipeLabel]);
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } });
+
+  rows.push([recipe.recipeType === "drinks" ? "Ficha tecnica de drink" : "Ficha tecnica de prepreparo"]);
+  merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: 5 } });
+
+  rows.push([]);
+  rows.push(["Campo", "Valor"]);
+  buildRecipeSummaryRows(recipe).forEach(([field, value]) => {
+    rows.push([field, value]);
+  });
+
+  rows.push([]);
+  rows.push(["Ingredientes"]);
+  merges.push({ s: { r: rows.length - 1, c: 0 }, e: { r: rows.length - 1, c: 5 } });
+  rows.push([
+    "Ingrediente",
+    "Quant. entrada",
+    "Quant. saida",
+    "Unidade",
+    "Custo unitario",
+    "Custo na receita",
+  ]);
+
+  if (recipe.ingredients.length) {
+    recipe.ingredients.forEach((ingredient) => {
+      rows.push([
+        ingredient.nome,
+        ingredient.quantEntrada == null ? "-" : nf.format(ingredient.quantEntrada),
+        ingredient.quantSaida == null ? "-" : nf.format(ingredient.quantSaida),
+        ingredient.unidade || "-",
+        ingredient.custoUnitario == null ? "-" : mf.format(ingredient.custoUnitario),
+        ingredient.custoReceita == null ? "-" : mf.format(ingredient.custoReceita),
+      ]);
+    });
+  } else {
+    rows.push(["Nenhum ingrediente encontrado", "", "", "", "", ""]);
+  }
+
+  const sections: Array<{ title: string; lines: string[] }> = [];
+  const prepLines = formatModoPreparo(recipe.modoPreparo, recipe.ingredients);
+  if (prepLines.length) sections.push({ title: "Modo de preparo", lines: prepLines });
+
+  if (recipe.recipeType === "drinks" && recipe.storytelling) {
+    const storyLines = formatModoPreparo(recipe.storytelling, recipe.ingredients);
+    if (storyLines.length) sections.push({ title: "Storytelling", lines: storyLines });
+  }
+
+  if (recipe.recipeType === "drinks") {
+    const flavorLines = formatFlavorProfile(recipe.flavorProfile);
+    if (flavorLines.length) sections.push({ title: "Perfil de sabor", lines: flavorLines });
+  }
+
+  sections.forEach((section) => {
+    rows.push([]);
+    rows.push([section.title]);
+    merges.push({ s: { r: rows.length - 1, c: 0 }, e: { r: rows.length - 1, c: 5 } });
+    section.lines.forEach((line) => rows.push([`- ${line}`]));
+  });
+
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  sheet["!merges"] = merges;
+  sheet["!cols"] = [
+    { wch: 28 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 18 },
+  ];
+
+  return sheet;
+}
+
 function exportRecipesToXlsx(
   XLSX: typeof import("xlsx"),
   type: RecipeType,
@@ -233,42 +329,12 @@ function exportRecipesToXlsx(
   currentKey?: string
 ) {
   const workbook = XLSX.utils.book_new();
+  const usedSheetNames = new Set<string>();
 
-  const summaryRows = recipes.map((recipe) => ({
-    Tipo: recipe.recipeType === "drinks" ? "Drinks" : "Prepreparo",
-    Ficha: recipe.recipeLabel,
-    "Volume base": recipe.volumeBase,
-    "Quant. receitas desejado": recipe.qtdDisplay,
-    "Volume final desejado": recipe.volumeDisplay,
-    "Custo total por volume": recipe.custoTotalPorVolume,
-    "CMV final": recipe.recipeType === "drinks" ? formatMaybePercent(recipe.extraFields?.cmvFinal) : "",
-    "Preco final": recipe.recipeType === "drinks" ? formatMaybeCurrency(recipe.extraFields?.precoFinal) : "",
-    Validade: recipe.recipeType !== "drinks" ? recipe.validade : "",
-    "Modo de preparo": formatModoPreparo(recipe.modoPreparo, recipe.ingredients).join(" | "),
-    Storytelling: recipe.storytelling ? formatModoPreparo(recipe.storytelling, recipe.ingredients).join(" | ") : "",
-    "Perfil de sabor": formatFlavorProfile(recipe.flavorProfile).join(" | "),
-  }));
-
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Resumo");
-
-  const ingredientRows = recipes.flatMap((recipe) =>
-    recipe.ingredients.map((ingredient) => ({
-      Ficha: recipe.recipeLabel,
-      Ingrediente: ingredient.nome,
-      "Quant. entrada": ingredient.quantEntrada,
-      "Quant. saida": ingredient.quantSaida,
-      Unidade: ingredient.unidade,
-      "Custo unitario": ingredient.custoUnitario,
-      "Custo na receita": ingredient.custoReceita,
-      "Custo por porcao": ingredient.custoPorPorcao,
-    }))
-  );
-
-  XLSX.utils.book_append_sheet(
-    workbook,
-    XLSX.utils.json_to_sheet(ingredientRows.length ? ingredientRows : [{ Ficha: "", Ingrediente: "" }]),
-    "Ingredientes"
-  );
+  recipes.forEach((recipe) => {
+    const sheetName = buildSheetName(recipe.recipeLabel, usedSheetNames);
+    XLSX.utils.book_append_sheet(workbook, buildRecipeSheet(XLSX, recipe), sheetName);
+  });
 
   downloadWorkbook(workbook, buildExportFileName(type, scope, "xlsx", currentKey), XLSX);
 }
