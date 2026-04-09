@@ -30,6 +30,7 @@ type CalcResponse = {
   }>;
   modoPreparo: string;
   validade: string;
+  storytelling?: string;
   status: string;
   extraFields?: ExtraFields;
 };
@@ -519,6 +520,28 @@ export default function App() {
             <h2>Validade</h2>
             <div className="validBox">{data.validade || "Sem validade cadastrada."}</div>
           </section>
+
+          {activeTab === "drinks" && (
+            <section className="prepWrap">
+              <h2>Storytelling</h2>
+              {data.storytelling ? (
+                <ol className="prepList">
+                  {formatModoPreparo(
+                    data.storytelling,
+                    data.ingredients.map((ingredient) => ({
+                      nome: ingredient.nome,
+                      quantEntrada: ingredient.quantEntrada,
+                      unidade: ingredient.unidade,
+                    }))
+                  ).map((line, idx) => (
+                    <li key={idx}>{line}</li>
+                  ))}
+                </ol>
+              ) : (
+                <div className="muted">Sem storytelling cadastrado.</div>
+              )}
+            </section>
+          )}
         </>
       )}
     </div>
