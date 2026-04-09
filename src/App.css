@@ -107,6 +107,27 @@
   opacity: .55;
 }
 
+.exportChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.exportChoiceButton {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  color: #111827;
+  font-size: 13px;
+  text-align: left;
+}
+
+.exportChoiceButton:disabled {
+  opacity: .55;
+}
+
 /* CARDS */
 .cards {
   margin-top: 14px;
@@ -201,6 +222,7 @@ th, td {
   }
   .controls { grid-template-columns: 1fr; }  /* campos empilham */
   .exportBar { grid-template-columns: 1fr; }
+  .exportChoices { grid-template-columns: 1fr; }
   .cards { grid-template-columns: repeat(2, 1fr); } /* 2 cards por linha */
   .flavorGrid { grid-template-columns: repeat(3, 1fr); }
   .header h1 { font-size: 20px; }

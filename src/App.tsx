@@ -388,6 +388,7 @@ export default function App() {
   const [loadingRecipes, setLoadingRecipes] = useState(false);
   const [loadingCalc, setLoadingCalc] = useState(false);
   const [exporting, setExporting] = useState<string>("");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const debounceRef = useRef<number | null>(null);
   const recipes = recipesByType[activeTab];
@@ -412,6 +413,10 @@ export default function App() {
     setDataByType((current) => ({ ...current, drinks: null }));
     setErrorByType((current) => ({ ...current, drinks: "" }));
   }, [activeTab]);
+
+  useEffect(() => {
+    setExportMenuOpen(false);
+  }, [activeTab, selectedKey]);
 
   useEffect(() => {
     (async () => {
@@ -881,43 +886,52 @@ export default function App() {
 
       <section className="exportBar">
         <div className="exportGroup">
-          <span className="exportLabel">Ficha exibida</span>
+          <span className="exportLabel">Exportacao</span>
           <button
             type="button"
             className="exportButton"
-            disabled={!selectedKey || !!exporting}
-            onClick={() => handleExport("current", "pdf")}
+            disabled={(!selectedKey && !recipes.length) || !!exporting}
+            onClick={() => setExportMenuOpen((current) => !current)}
           >
-            {exporting === "current-pdf" ? "Gerando PDF..." : "Exportar PDF"}
+            {exporting ? "Gerando arquivo..." : exportMenuOpen ? "Fechar exportacao" : "Exportar"}
           </button>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!selectedKey || !!exporting}
-            onClick={() => handleExport("current", "xlsx")}
-          >
-            {exporting === "current-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
-          </button>
-        </div>
 
-        <div className="exportGroup">
-          <span className="exportLabel">Todas as fichas desta aba</span>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!recipes.length || !!exporting}
-            onClick={() => handleExport("all", "pdf")}
-          >
-            {exporting === "all-pdf" ? "Gerando PDF..." : "Exportar PDF"}
-          </button>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!recipes.length || !!exporting}
-            onClick={() => handleExport("all", "xlsx")}
-          >
-            {exporting === "all-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
-          </button>
+          {exportMenuOpen && (
+            <div className="exportChoices">
+              <button
+                type="button"
+                className="exportChoiceButton"
+                disabled={!selectedKey || !!exporting}
+                onClick={() => handleExport("current", "pdf")}
+              >
+                Ficha exibida em PDF
+              </button>
+              <button
+                type="button"
+                className="exportChoiceButton"
+                disabled={!selectedKey || !!exporting}
+                onClick={() => handleExport("current", "xlsx")}
+              >
+                Ficha exibida em XLSX
+              </button>
+              <button
+                type="button"
+                className="exportChoiceButton"
+                disabled={!recipes.length || !!exporting}
+                onClick={() => handleExport("all", "pdf")}
+              >
+                Todas as fichas em PDF
+              </button>
+              <button
+                type="button"
+                className="exportChoiceButton"
+                disabled={!recipes.length || !!exporting}
+                onClick={() => handleExport("all", "xlsx")}
+              >
+                Todas as fichas em XLSX
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </div>
