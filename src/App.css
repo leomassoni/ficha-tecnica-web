@@ -117,7 +117,7 @@ th, td {
 
 .flavorGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -126,30 +126,26 @@ th, td {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 8px 6px;
+  padding: 8px;
 }
 
 .flavorLabel {
   font-size: 11px;
   color: #4b5563;
-  min-height: 28px;
+  min-height: 16px;
   line-height: 1.15;
-  text-align: center;
-  text-wrap: balance;
+  text-align: left;
 }
 
 .flavorScale {
-  display: flex;
-  align-items: end;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   margin-top: 8px;
-  min-height: 32px;
 }
 
 .flavorDot {
-  width: 6px;
-  height: 24px;
+  height: 10px;
   border-radius: 999px;
   background: #e5e7eb;
 }
@@ -168,6 +164,7 @@ th, td {
   }
   .controls { grid-template-columns: 1fr; }  /* campos empilham */
   .cards { grid-template-columns: repeat(2, 1fr); } /* 2 cards por linha */
+  .flavorGrid { grid-template-columns: repeat(3, 1fr); }
   .header h1 { font-size: 20px; }
 }
 
@@ -175,18 +172,15 @@ th, td {
 @media (max-width: 360px) {
   .cards { grid-template-columns: 1fr; }
   .flavorGrid {
-    gap: 4px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
   }
   .flavorCard {
-    padding: 6px 4px;
+    padding: 6px;
   }
   .flavorLabel {
     font-size: 10px;
-    min-height: 24px;
-  }
-  .flavorDot {
-    width: 5px;
-    height: 20px;
+    min-height: 14px;
   }
 }
 

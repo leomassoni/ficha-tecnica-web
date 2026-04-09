@@ -170,7 +170,7 @@ function formatMaybePercent(value: number | string | null | undefined) {
 
 function clampFlavorLevel(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(4, Math.round(value)));
+  return Math.max(0, Math.min(5, Math.round(value)));
 }
 
 export default function App() {
@@ -563,8 +563,8 @@ export default function App() {
                     return (
                       <div key={field.key} className="flavorCard">
                         <div className="flavorLabel">{field.label}</div>
-                        <div className="flavorScale" aria-label={`${field.label}: ${level} de 4`}>
-                          {[0, 1, 2, 3].map((step) => (
+                        <div className="flavorScale" aria-label={`${field.label}: ${level} de 5`}>
+                          {[0, 1, 2, 3, 4].map((step) => (
                             <span
                               key={step}
                               className={`flavorDot${step < level ? " isActive" : ""}`}
