@@ -84,7 +84,6 @@ const FLAVOR_FIELDS: Array<{ key: keyof FlavorProfile; label: string }> = [
   { key: "azedo", label: "Azedo" },
   { key: "amargo", label: "Amargo" },
   { key: "salgado", label: "Salgado" },
-  { key: "umami", label: "Umami" },
   { key: "drinkability", label: "Drinkability" },
   { key: "picancia", label: "Picancia" },
 ];
