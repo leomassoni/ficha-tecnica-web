@@ -193,6 +193,16 @@ export default function App() {
     activeTab === "drinks" && !qtdReceitas && volumeBase ? "1" : qtdReceitas;
 
   useEffect(() => {
+    if (activeTab !== "drinks") return;
+
+    setSelectedKeyByType((current) => ({ ...current, drinks: "" }));
+    setVolumeByType((current) => ({ ...current, drinks: "" }));
+    setQtdByType((current) => ({ ...current, drinks: "1" }));
+    setDataByType((current) => ({ ...current, drinks: null }));
+    setErrorByType((current) => ({ ...current, drinks: "" }));
+  }, [activeTab]);
+
+  useEffect(() => {
     (async () => {
       try {
         setLoadingRecipes(true);
@@ -207,6 +217,14 @@ export default function App() {
         setSelectedKeyByType((current) => {
           const currentKey = current[activeTab];
           const stillExists = nextRecipes.some((recipe: RecipeOption) => recipe.key === currentKey);
+
+          if (activeTab === "drinks") {
+            return {
+              ...current,
+              drinks: stillExists ? currentKey : "",
+            };
+          }
+
           return {
             ...current,
             [activeTab]: stillExists ? currentKey : nextRecipes[0]?.key ?? "",
@@ -353,6 +371,14 @@ export default function App() {
                   setQtdByType((current) => ({
                     ...current,
                     drinks: "1",
+                  }));
+                  setDataByType((current) => ({
+                    ...current,
+                    drinks: null,
+                  }));
+                  setErrorByType((current) => ({
+                    ...current,
+                    drinks: "",
                   }));
                 }
               }
