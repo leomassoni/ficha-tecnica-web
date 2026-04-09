@@ -708,48 +708,6 @@ export default function App() {
         )}
       </section>
 
-      <section className="exportBar">
-        <div className="exportGroup">
-          <span className="exportLabel">Ficha exibida</span>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!selectedKey || !!exporting}
-            onClick={() => handleExport("current", "pdf")}
-          >
-            {exporting === "current-pdf" ? "Gerando PDF..." : "Exportar PDF"}
-          </button>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!selectedKey || !!exporting}
-            onClick={() => handleExport("current", "xlsx")}
-          >
-            {exporting === "current-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
-          </button>
-        </div>
-
-        <div className="exportGroup">
-          <span className="exportLabel">Todas as fichas desta aba</span>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!recipes.length || !!exporting}
-            onClick={() => handleExport("all", "pdf")}
-          >
-            {exporting === "all-pdf" ? "Gerando PDF..." : "Exportar PDF"}
-          </button>
-          <button
-            type="button"
-            className="exportButton"
-            disabled={!recipes.length || !!exporting}
-            onClick={() => handleExport("all", "xlsx")}
-          >
-            {exporting === "all-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
-          </button>
-        </div>
-      </section>
-
       {error && <div className="error">{error}</div>}
       {loading && <div className="muted">Carregando…</div>}
 
@@ -920,6 +878,48 @@ export default function App() {
           )}
         </>
       )}
+
+      <section className="exportBar">
+        <div className="exportGroup">
+          <span className="exportLabel">Ficha exibida</span>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!selectedKey || !!exporting}
+            onClick={() => handleExport("current", "pdf")}
+          >
+            {exporting === "current-pdf" ? "Gerando PDF..." : "Exportar PDF"}
+          </button>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!selectedKey || !!exporting}
+            onClick={() => handleExport("current", "xlsx")}
+          >
+            {exporting === "current-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
+          </button>
+        </div>
+
+        <div className="exportGroup">
+          <span className="exportLabel">Todas as fichas desta aba</span>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!recipes.length || !!exporting}
+            onClick={() => handleExport("all", "pdf")}
+          >
+            {exporting === "all-pdf" ? "Gerando PDF..." : "Exportar PDF"}
+          </button>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!recipes.length || !!exporting}
+            onClick={() => handleExport("all", "xlsx")}
+          >
+            {exporting === "all-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
