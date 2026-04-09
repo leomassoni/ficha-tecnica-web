@@ -4,6 +4,28 @@
   padding: 16px;
 }
 
+.tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #e8edf3;
+}
+
+.tabButton {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: transparent;
+  color: #4b5563;
+}
+
+.tabButton.isActive {
+  background: #111827;
+  color: #fff;
+}
+
 .header h1 { margin: 0; font-size: 22px; }
 .header p { margin: 8px 0 16px; opacity: .75; font-size: 14px; }
 
@@ -96,6 +118,11 @@ th, td {
 /* MOBILE FIRST: foco celular */
 @media (max-width: 720px) {
   .page { padding: 12px; }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
   .controls { grid-template-columns: 1fr; }  /* campos empilham */
   .cards { grid-template-columns: repeat(2, 1fr); } /* 2 cards por linha */
   .header h1 { font-size: 20px; }
