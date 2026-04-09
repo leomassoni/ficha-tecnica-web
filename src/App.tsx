@@ -160,11 +160,11 @@ export default function App() {
   });
   const [volumeByType, setVolumeByType] = useState<Record<RecipeType, string>>({
     prepreparo: "1000",
-    drinks: "1000",
+    drinks: "",
   });
   const [qtdByType, setQtdByType] = useState<Record<RecipeType, string>>({
     prepreparo: "",
-    drinks: "",
+    drinks: "1",
   });
   const [dataByType, setDataByType] = useState<Record<RecipeType, CalcResponse | null>>({
     prepreparo: null,
@@ -242,6 +242,19 @@ export default function App() {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
     };
   }, [activeTab, selectedKey, volume]);
+
+  useEffect(() => {
+    if (activeTab !== "drinks" || !data || volumeByType.drinks) return;
+
+    setVolumeByType((current) => ({
+      ...current,
+      drinks: formatPtBr(data.volumeBase, 2),
+    }));
+    setQtdByType((current) => ({
+      ...current,
+      drinks: current.drinks || "1",
+    }));
+  }, [activeTab, data, volumeByType.drinks]);
 
   function updateCurrentVolume(nextValue: string) {
     setVolumeByType((current) => ({ ...current, [activeTab]: nextValue }));
@@ -321,33 +334,73 @@ export default function App() {
                 : null
             }
             onChange={(option) =>
-              setSelectedKeyByType((current) => ({
-                ...current,
-                [activeTab]: option?.value ?? "",
-              }))
+              {
+                const nextKey = option?.value ?? "";
+                setSelectedKeyByType((current) => ({
+                  ...current,
+                  [activeTab]: nextKey,
+                }));
+
+                if (activeTab === "drinks") {
+                  setVolumeByType((current) => ({
+                    ...current,
+                    drinks: "",
+                  }));
+                  setQtdByType((current) => ({
+                    ...current,
+                    drinks: "1",
+                  }));
+                }
+              }
             }
           />
         </div>
 
-        <div className="field">
-          <label>Volume final desejado (em gr ou ml)</label>
-          <input
-            value={volume}
-            onChange={(e) => handleVolumeChange(e.target.value)}
-            placeholder="Ex.: 1000"
-            inputMode="decimal"
-          />
-        </div>
+        {activeTab === "drinks" ? (
+          <>
+            <div className="field">
+              <label>Quant. receitas desejado</label>
+              <input
+                value={qtdReceitas}
+                onChange={(e) => handleQtdReceitasChange(e.target.value)}
+                placeholder="Ex.: 1"
+                inputMode="decimal"
+              />
+            </div>
 
-        <div className="field">
-          <label>Quant. receitas desejado</label>
-          <input
-            value={qtdReceitas}
-            onChange={(e) => handleQtdReceitasChange(e.target.value)}
-            placeholder="Ex.: 1,5"
-            inputMode="decimal"
-          />
-        </div>
+            <div className="field">
+              <label>Volume final desejado (em gr ou ml)</label>
+              <input
+                value={volume}
+                onChange={(e) => handleVolumeChange(e.target.value)}
+                placeholder="Ex.: 194"
+                inputMode="decimal"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="field">
+              <label>Volume final desejado (em gr ou ml)</label>
+              <input
+                value={volume}
+                onChange={(e) => handleVolumeChange(e.target.value)}
+                placeholder="Ex.: 1000"
+                inputMode="decimal"
+              />
+            </div>
+
+            <div className="field">
+              <label>Quant. receitas desejado</label>
+              <input
+                value={qtdReceitas}
+                onChange={(e) => handleQtdReceitasChange(e.target.value)}
+                placeholder="Ex.: 1,5"
+                inputMode="decimal"
+              />
+            </div>
+          </>
+        )}
       </section>
 
       {error && <div className="error">{error}</div>}
