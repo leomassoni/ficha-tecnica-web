@@ -115,6 +115,43 @@ th, td {
 .warn { margin: 12px 0; padding: 10px; border: 1px solid #fbbf24; background: #fff7da; border-radius: 12px; }
 .muted { margin-top: 12px; opacity: .75; }
 
+.flavorGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.flavorCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.flavorLabel {
+  font-size: 12px;
+  color: #4b5563;
+  min-height: 32px;
+}
+
+.flavorScale {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.flavorDot {
+  height: 12px;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.flavorDot.isActive {
+  background: #111827;
+}
+
 /* MOBILE FIRST: foco celular */
 @media (max-width: 720px) {
   .page { padding: 12px; }
@@ -123,6 +160,7 @@ th, td {
     grid-template-columns: 1fr 1fr;
     width: 100%;
   }
+  .flavorGrid { grid-template-columns: repeat(2, 1fr); }
   .controls { grid-template-columns: 1fr; }  /* campos empilham */
   .cards { grid-template-columns: repeat(2, 1fr); } /* 2 cards por linha */
   .header h1 { font-size: 20px; }
@@ -131,6 +169,7 @@ th, td {
 /* Muito pequeno */
 @media (max-width: 360px) {
   .cards { grid-template-columns: 1fr; }
+  .flavorGrid { grid-template-columns: 1fr; }
 }
 
 /* react-select */

@@ -10,6 +10,15 @@ type ExtraFields = {
   cmvFinal?: number | string | null;
   precoFinal?: number | string | null;
 };
+type FlavorProfile = {
+  doce?: number | null;
+  azedo?: number | null;
+  amargo?: number | null;
+  salgado?: number | null;
+  umami?: number | null;
+  drinkability?: number | null;
+  picancia?: number | null;
+};
 
 type CalcResponse = {
   recipeType: RecipeType;
@@ -33,6 +42,7 @@ type CalcResponse = {
   storytelling?: string;
   status: string;
   extraFields?: ExtraFields;
+  flavorProfile?: FlavorProfile | null;
 };
 
 const TAB_CONFIG: Record<
@@ -69,6 +79,15 @@ const TAB_CONFIG: Record<
 const nf = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 });
 const mf = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const TAB_KEYS = Object.keys(TAB_CONFIG) as RecipeType[];
+const FLAVOR_FIELDS: Array<{ key: keyof FlavorProfile; label: string }> = [
+  { key: "doce", label: "Doce" },
+  { key: "azedo", label: "Azedo" },
+  { key: "amargo", label: "Amargo" },
+  { key: "salgado", label: "Salgado" },
+  { key: "umami", label: "Umami" },
+  { key: "drinkability", label: "Drinkability" },
+  { key: "picancia", label: "Picancia" },
+];
 
 function norm(s: string) {
   return (s ?? "")
@@ -147,6 +166,11 @@ function formatMaybePercent(value: number | string | null | undefined) {
   }
 
   return value ? String(value) : "-";
+}
+
+function clampFlavorLevel(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(4, Math.round(value)));
 }
 
 export default function App() {
@@ -529,6 +553,31 @@ export default function App() {
           </section>
 
           <section className="prepWrap">
+            {activeTab === "drinks" && (
+              <>
+                <h2>Perfil de sabor</h2>
+                <div className="flavorGrid">
+                  {FLAVOR_FIELDS.map((field) => {
+                    const level = clampFlavorLevel(data.flavorProfile?.[field.key]);
+
+                    return (
+                      <div key={field.key} className="flavorCard">
+                        <div className="flavorLabel">{field.label}</div>
+                        <div className="flavorScale" aria-label={`${field.label}: ${level} de 4`}>
+                          {[0, 1, 2, 3].map((step) => (
+                            <span
+                              key={step}
+                              className={`flavorDot${step < level ? " isActive" : ""}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             <h2>Modo de preparo</h2>
             {data.modoPreparo ? (
               <ol className="prepList">
