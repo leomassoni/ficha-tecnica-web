@@ -548,10 +548,12 @@ export default function App() {
             )}
           </section>
 
-          <section className="validWrap">
-            <h2>Validade</h2>
-            <div className="validBox">{data.validade || "Sem validade cadastrada."}</div>
-          </section>
+          {activeTab !== "drinks" && (
+            <section className="validWrap">
+              <h2>Validade</h2>
+              <div className="validBox">{data.validade || "Sem validade cadastrada."}</div>
+            </section>
+          )}
 
           {activeTab === "drinks" && (
             <section className="prepWrap">
