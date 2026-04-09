@@ -187,6 +187,10 @@ export default function App() {
   const error = errorByType[activeTab];
   const loading = loadingRecipes || loadingCalc;
   const volumeBase = data?.volumeBase ?? null;
+  const effectiveVolume =
+    activeTab === "drinks" && !volume && volumeBase ? formatPtBr(volumeBase, 2) : volume;
+  const effectiveQtdReceitas =
+    activeTab === "drinks" && !qtdReceitas && volumeBase ? "1" : qtdReceitas;
 
   useEffect(() => {
     (async () => {
@@ -359,9 +363,9 @@ export default function App() {
         {activeTab === "drinks" ? (
           <>
             <div className="field">
-              <label>Quant. receitas desejado</label>
+                <label>Quant. receitas desejado</label>
               <input
-                value={qtdReceitas}
+                value={effectiveQtdReceitas}
                 onChange={(e) => handleQtdReceitasChange(e.target.value)}
                 placeholder="Ex.: 1"
                 inputMode="decimal"
@@ -369,9 +373,9 @@ export default function App() {
             </div>
 
             <div className="field">
-              <label>Volume final desejado (em gr ou ml)</label>
+                <label>Volume final desejado (em gr ou ml)</label>
               <input
-                value={volume}
+                value={effectiveVolume}
                 onChange={(e) => handleVolumeChange(e.target.value)}
                 placeholder="Ex.: 194"
                 inputMode="decimal"
@@ -422,7 +426,9 @@ export default function App() {
             <div className="card">
               <div className="k">Volume a ser produzido</div>
               <div className="v">
-                {volume ? nf.format(parseUserNumberPtBr(volume) ?? 0) : nf.format(data.volumeBase)}
+                {effectiveVolume
+                  ? nf.format(parseUserNumberPtBr(effectiveVolume) ?? 0)
+                  : nf.format(data.volumeBase)}
               </div>
             </div>
 
