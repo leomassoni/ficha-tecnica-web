@@ -118,32 +118,38 @@ th, td {
 .flavorGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
 .flavorCard {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 8px 6px;
 }
 
 .flavorLabel {
-  font-size: 12px;
+  font-size: 11px;
   color: #4b5563;
-  min-height: 32px;
+  min-height: 28px;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .flavorScale {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 4px;
   margin-top: 8px;
+  min-height: 32px;
 }
 
 .flavorDot {
-  height: 12px;
+  width: 6px;
+  height: 24px;
   border-radius: 999px;
   background: #e5e7eb;
 }
@@ -160,7 +166,6 @@ th, td {
     grid-template-columns: 1fr 1fr;
     width: 100%;
   }
-  .flavorGrid { grid-template-columns: repeat(2, 1fr); }
   .controls { grid-template-columns: 1fr; }  /* campos empilham */
   .cards { grid-template-columns: repeat(2, 1fr); } /* 2 cards por linha */
   .header h1 { font-size: 20px; }
@@ -169,7 +174,20 @@ th, td {
 /* Muito pequeno */
 @media (max-width: 360px) {
   .cards { grid-template-columns: 1fr; }
-  .flavorGrid { grid-template-columns: 1fr; }
+  .flavorGrid {
+    gap: 4px;
+  }
+  .flavorCard {
+    padding: 6px 4px;
+  }
+  .flavorLabel {
+    font-size: 10px;
+    min-height: 24px;
+  }
+  .flavorDot {
+    width: 5px;
+    height: 20px;
+  }
 }
 
 /* react-select */
