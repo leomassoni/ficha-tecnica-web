@@ -292,7 +292,6 @@ export default function App() {
     [recipes, selectedKey]
   );
 
-  const drinkStatus = data?.status?.trim();
   const cmvFinal = data?.extraFields?.cmvFinal;
   const precoFinal = data?.extraFields?.precoFinal;
 
@@ -433,11 +432,6 @@ export default function App() {
 
             {activeTab === "drinks" && (
               <>
-                <div className="card">
-                  <div className="k">Status</div>
-                  <div className="v">{drinkStatus || "-"}</div>
-                </div>
-
                 <div className="card">
                   <div className="k">CMV final</div>
                   <div className="v">{formatMaybePercent(cmvFinal)}</div>
