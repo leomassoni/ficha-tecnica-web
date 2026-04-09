@@ -70,6 +70,43 @@
   min-height: 16px; /* garante alinhamento entre campos */
 }
 
+.exportBar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.exportGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.exportLabel {
+  min-width: 100%;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.exportButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #111827;
+  color: #fff;
+  font-size: 13px;
+}
+
+.exportButton:disabled {
+  opacity: .55;
+}
+
 /* CARDS */
 .cards {
   margin-top: 14px;
@@ -163,6 +200,7 @@ th, td {
     width: 100%;
   }
   .controls { grid-template-columns: 1fr; }  /* campos empilham */
+  .exportBar { grid-template-columns: 1fr; }
   .cards { grid-template-columns: repeat(2, 1fr); } /* 2 cards por linha */
   .flavorGrid { grid-template-columns: repeat(3, 1fr); }
   .header h1 { font-size: 20px; }

@@ -45,6 +45,14 @@ type CalcResponse = {
   flavorProfile?: FlavorProfile | null;
 };
 
+type ExportScope = "current" | "all";
+type ExportFormat = "pdf" | "xlsx";
+type ExportRecipeData = CalcResponse & {
+  recipeLabel: string;
+  volumeDisplay: string;
+  qtdDisplay: string;
+};
+
 const TAB_CONFIG: Record<
   RecipeType,
   {
@@ -172,6 +180,185 @@ function clampFlavorLevel(value: number | null | undefined) {
   return Math.max(0, Math.min(5, Math.round(value)));
 }
 
+function toSafeFilenamePart(value: string) {
+  return norm(value).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function formatFlavorProfile(profile: FlavorProfile | null | undefined) {
+  if (!profile) return [];
+
+  return FLAVOR_FIELDS.map((field) => {
+    const level = clampFlavorLevel(profile[field.key]);
+    return `${field.label}: ${level}/5`;
+  });
+}
+
+function buildExportFileName(type: RecipeType, scope: ExportScope, format: ExportFormat, key?: string) {
+  const typeLabel = type === "drinks" ? "drinks" : "prepreparo";
+  const scopeLabel = scope === "all" ? "todas-as-fichas" : toSafeFilenamePart(key || "ficha");
+  return `ficha-tecnica-${typeLabel}-${scopeLabel}.${format}`;
+}
+
+function buildRecipeSummaryRows(recipe: ExportRecipeData) {
+  const rows: Array<[string, string]> = [
+    ["Tipo", recipe.recipeType === "drinks" ? "Drinks" : "Prepreparo"],
+    ["Ficha", recipe.recipeLabel],
+    ["Volume base", nf.format(recipe.volumeBase)],
+    ["Quant. receitas desejado", recipe.qtdDisplay],
+    ["Volume final desejado", recipe.volumeDisplay],
+    ["Custo total por volume", mf.format(recipe.custoTotalPorVolume)],
+  ];
+
+  if (recipe.recipeType === "drinks") {
+    rows.push(["CMV final", formatMaybePercent(recipe.extraFields?.cmvFinal)]);
+    rows.push(["Preco final", formatMaybeCurrency(recipe.extraFields?.precoFinal)]);
+  }
+
+  if (recipe.recipeType !== "drinks" && recipe.validade) {
+    rows.push(["Validade", recipe.validade]);
+  }
+
+  return rows;
+}
+
+function downloadWorkbook(workbook: import("xlsx").WorkBook, filename: string, XLSX: typeof import("xlsx")) {
+  XLSX.writeFile(workbook, filename);
+}
+
+function exportRecipesToXlsx(
+  XLSX: typeof import("xlsx"),
+  type: RecipeType,
+  scope: ExportScope,
+  recipes: ExportRecipeData[],
+  currentKey?: string
+) {
+  const workbook = XLSX.utils.book_new();
+
+  const summaryRows = recipes.map((recipe) => ({
+    Tipo: recipe.recipeType === "drinks" ? "Drinks" : "Prepreparo",
+    Ficha: recipe.recipeLabel,
+    "Volume base": recipe.volumeBase,
+    "Quant. receitas desejado": recipe.qtdDisplay,
+    "Volume final desejado": recipe.volumeDisplay,
+    "Custo total por volume": recipe.custoTotalPorVolume,
+    "CMV final": recipe.recipeType === "drinks" ? formatMaybePercent(recipe.extraFields?.cmvFinal) : "",
+    "Preco final": recipe.recipeType === "drinks" ? formatMaybeCurrency(recipe.extraFields?.precoFinal) : "",
+    Validade: recipe.recipeType !== "drinks" ? recipe.validade : "",
+    "Modo de preparo": formatModoPreparo(recipe.modoPreparo, recipe.ingredients).join(" | "),
+    Storytelling: recipe.storytelling ? formatModoPreparo(recipe.storytelling, recipe.ingredients).join(" | ") : "",
+    "Perfil de sabor": formatFlavorProfile(recipe.flavorProfile).join(" | "),
+  }));
+
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Resumo");
+
+  const ingredientRows = recipes.flatMap((recipe) =>
+    recipe.ingredients.map((ingredient) => ({
+      Ficha: recipe.recipeLabel,
+      Ingrediente: ingredient.nome,
+      "Quant. entrada": ingredient.quantEntrada,
+      "Quant. saida": ingredient.quantSaida,
+      Unidade: ingredient.unidade,
+      "Custo unitario": ingredient.custoUnitario,
+      "Custo na receita": ingredient.custoReceita,
+      "Custo por porcao": ingredient.custoPorPorcao,
+    }))
+  );
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet(ingredientRows.length ? ingredientRows : [{ Ficha: "", Ingrediente: "" }]),
+    "Ingredientes"
+  );
+
+  downloadWorkbook(workbook, buildExportFileName(type, scope, "xlsx", currentKey), XLSX);
+}
+
+function exportRecipesToPdf(
+  jsPDF: typeof import("jspdf").jsPDF,
+  autoTable: typeof import("jspdf-autotable").default,
+  type: RecipeType,
+  scope: ExportScope,
+  recipes: ExportRecipeData[],
+  currentKey?: string
+) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pdfWithTables = doc as typeof doc & { lastAutoTable?: { finalY?: number } };
+
+  recipes.forEach((recipe, index) => {
+    if (index > 0) doc.addPage();
+
+    doc.setFontSize(18);
+    doc.text(recipe.recipeLabel, 40, 44);
+
+    doc.setFontSize(11);
+    doc.text(recipe.recipeType === "drinks" ? "Ficha tecnica de drink" : "Ficha tecnica de prepreparo", 40, 64);
+
+    autoTable(doc, {
+      startY: 78,
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 5 },
+      head: [["Campo", "Valor"]],
+      body: buildRecipeSummaryRows(recipe),
+    });
+
+    const ingredientsStartY = pdfWithTables.lastAutoTable?.finalY ?? 78;
+
+    autoTable(doc, {
+      startY: ingredientsStartY + 18,
+      theme: "grid",
+      styles: { fontSize: 8.5, cellPadding: 4 },
+      head: [[
+        "Ingrediente",
+        "Quant. entrada",
+        "Quant. saida",
+        "Unidade",
+        "Custo unitario",
+        "Custo na receita",
+      ]],
+      body: recipe.ingredients.map((ingredient) => [
+        ingredient.nome,
+        ingredient.quantEntrada == null ? "-" : nf.format(ingredient.quantEntrada),
+        ingredient.quantSaida == null ? "-" : nf.format(ingredient.quantSaida),
+        ingredient.unidade || "-",
+        ingredient.custoUnitario == null ? "-" : mf.format(ingredient.custoUnitario),
+        ingredient.custoReceita == null ? "-" : mf.format(ingredient.custoReceita),
+      ]),
+    });
+
+    let cursorY = (pdfWithTables.lastAutoTable?.finalY ?? ingredientsStartY + 18) + 26;
+
+    const sections: Array<{ title: string; lines: string[] }> = [];
+    const prepLines = formatModoPreparo(recipe.modoPreparo, recipe.ingredients);
+    if (prepLines.length) sections.push({ title: "Modo de preparo", lines: prepLines });
+
+    if (recipe.recipeType === "drinks" && recipe.storytelling) {
+      const storyLines = formatModoPreparo(recipe.storytelling, recipe.ingredients);
+      if (storyLines.length) sections.push({ title: "Storytelling", lines: storyLines });
+    }
+
+    if (recipe.recipeType === "drinks") {
+      const flavorLines = formatFlavorProfile(recipe.flavorProfile);
+      if (flavorLines.length) sections.push({ title: "Perfil de sabor", lines: flavorLines });
+    }
+
+    sections.forEach((section) => {
+      doc.setFontSize(12);
+      doc.text(section.title, 40, cursorY);
+      cursorY += 16;
+
+      doc.setFontSize(10);
+      section.lines.forEach((line) => {
+        const wrapped = doc.splitTextToSize(`- ${line}`, 515);
+        doc.text(wrapped, 40, cursorY);
+        cursorY += wrapped.length * 13;
+      });
+      cursorY += 8;
+    });
+  });
+
+  doc.save(buildExportFileName(type, scope, "pdf", currentKey));
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<RecipeType>("prepreparo");
   const [recipesByType, setRecipesByType] = useState<Record<RecipeType, RecipeOption[]>>({
@@ -200,6 +387,7 @@ export default function App() {
   });
   const [loadingRecipes, setLoadingRecipes] = useState(false);
   const [loadingCalc, setLoadingCalc] = useState(false);
+  const [exporting, setExporting] = useState<string>("");
 
   const debounceRef = useRef<number | null>(null);
   const recipes = recipesByType[activeTab];
@@ -333,6 +521,70 @@ export default function App() {
     updateCurrentVolume(formatPtBr(nextVolume, 2));
   }
 
+  async function fetchCalcData(recipeKey: string, volumeValue: string) {
+    const res = await fetch(`${API_URL}${TAB_CONFIG[activeTab].calcEndpoint(recipeKey, volumeValue)}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.error ?? `Erro ao carregar ficha ${recipeKey}`);
+    return json as CalcResponse;
+  }
+
+  async function collectRecipesForExport(scope: ExportScope) {
+    if (scope === "current") {
+      if (!selectedKey) throw new Error("Selecione uma ficha antes de exportar.");
+
+      const currentData = data ?? (await fetchCalcData(selectedKey, volume));
+      return [
+        {
+          ...currentData,
+          recipeLabel: selectedLabel,
+          volumeDisplay: effectiveVolume || formatPtBr(currentData.volumeBase, 2),
+          qtdDisplay: effectiveQtdReceitas || "1",
+        },
+      ] satisfies ExportRecipeData[];
+    }
+
+    const exportedRecipes: ExportRecipeData[] = [];
+
+    for (const recipe of recipes) {
+      const calcData = await fetchCalcData(recipe.key, "");
+      exportedRecipes.push({
+        ...calcData,
+        recipeLabel: recipe.label,
+        volumeDisplay: formatPtBr(calcData.volumeBase, 2),
+        qtdDisplay: "1",
+      });
+    }
+
+    return exportedRecipes;
+  }
+
+  async function handleExport(scope: ExportScope, format: ExportFormat) {
+    try {
+      setExporting(`${scope}-${format}`);
+      setErrorByType((current) => ({ ...current, [activeTab]: "" }));
+
+      const exportRecipes = await collectRecipesForExport(scope);
+      if (!exportRecipes.length) {
+        throw new Error("Nenhuma ficha disponivel para exportacao.");
+      }
+
+      if (format === "pdf") {
+        const [{ jsPDF }, autoTableModule] = await Promise.all([
+          import("jspdf"),
+          import("jspdf-autotable"),
+        ]);
+        exportRecipesToPdf(jsPDF, autoTableModule.default, activeTab, scope, exportRecipes, selectedKey);
+      } else {
+        const XLSX = await import("xlsx");
+        exportRecipesToXlsx(XLSX, activeTab, scope, exportRecipes, selectedKey);
+      }
+    } catch (e: any) {
+      setErrorByType((current) => ({ ...current, [activeTab]: e?.message ?? String(e) }));
+    } finally {
+      setExporting("");
+    }
+  }
+
   const selectedLabel = useMemo(
     () => recipes.find((recipe) => recipe.key === selectedKey)?.label ?? selectedKey,
     [recipes, selectedKey]
@@ -454,6 +706,48 @@ export default function App() {
             </div>
           </>
         )}
+      </section>
+
+      <section className="exportBar">
+        <div className="exportGroup">
+          <span className="exportLabel">Ficha exibida</span>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!selectedKey || !!exporting}
+            onClick={() => handleExport("current", "pdf")}
+          >
+            {exporting === "current-pdf" ? "Gerando PDF..." : "Exportar PDF"}
+          </button>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!selectedKey || !!exporting}
+            onClick={() => handleExport("current", "xlsx")}
+          >
+            {exporting === "current-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
+          </button>
+        </div>
+
+        <div className="exportGroup">
+          <span className="exportLabel">Todas as fichas desta aba</span>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!recipes.length || !!exporting}
+            onClick={() => handleExport("all", "pdf")}
+          >
+            {exporting === "all-pdf" ? "Gerando PDF..." : "Exportar PDF"}
+          </button>
+          <button
+            type="button"
+            className="exportButton"
+            disabled={!recipes.length || !!exporting}
+            onClick={() => handleExport("all", "xlsx")}
+          >
+            {exporting === "all-xlsx" ? "Gerando XLSX..." : "Exportar XLSX"}
+          </button>
+        </div>
       </section>
 
       {error && <div className="error">{error}</div>}
